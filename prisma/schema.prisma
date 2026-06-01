@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  name          String?
+  nameEn        String?
+  phone         String?
+  avatarUrl     String?
+  emailVerified DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  accounts      Account[]
+  memberships   OrgMember[]
+  sessions      Session[]
+  transactions  Transaction[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Organization {
+  id           String        @id @default(cuid())
+  nameTh       String
+  nameEn       String?
+  taxId        String?
+  vatEnabled   Boolean       @default(false)
+  orgType      String        @default("กลุ่มบุคคล / กองมรดก")
+  logoUrl      String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  bankAccounts BankAccount[]
+  branches     Branch[]
+  members      OrgMember[]
+  transactions Transaction[]
+}
+
+model Branch {
+  id           String       @id @default(cuid())
+  orgId        String
+  branchCode   String       @default("00000")
+  phone        String?
+  addressTh    String?
+  addressEn    String?
+  isMain       Boolean      @default(true)
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+model OrgMember {
+  id       String       @id @default(cuid())
+  orgId    String
+  userId   String
+  role     String       @default("MEMBER")
+  joinedAt DateTime     @default(now())
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, userId])
+}
+
+model BankAccount {
+  id          String       @id @default(cuid())
+  orgId       String
+  bankName    String
+  accountName String
+  accountNo   String
+  note        String?
+  isMain      Boolean      @default(false)
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+model Transaction {
+  id          String       @id @default(cuid())
+  orgId       String
+  userId      String
+  type        String
+  amount      Float
+  vatAmount   Float?
+  whtAmount   Float?
+  vendor      String?
+  description String?
+  category    String?
+  tags        String?
+  receiptUrl  String?
+  receiptData String?
+  status      String       @default("PENDING")
+  txDate      DateTime     @default(now())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  user        User         @relation(fields: [userId], references: [id])
+  org         Organization @relation(fields: [orgId], references: [id])
+}
+
+model Budget {
+  id        String   @id @default(cuid())
+  orgId     String
+  category  String
+  amount    Float
+  month     Int
+  year      Int
+  createdAt DateTime @default(now())
+}
